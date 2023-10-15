@@ -1,0 +1,11 @@
+* Compile
+#do
+gcc test.c -pedantic -std=c99
+
+* Run
+#do
+./a.out
+
+* Remove
+#do
+rm a.out

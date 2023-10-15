@@ -1,0 +1,10 @@
+* String Utils
+An [[https://github.com/nothings/stb][stb-style]] single header library for working with strings in C.
+
+Provides a simple string view and string builder.
+** Quick start
+After copying [[./stban_stringutils.h][stban_stringutils.h]] into src directory, add
+#+begin_src c
+  #define STBAN_STRINGUTILS_IMPLEMENTATION
+  #include "./stban_stringutils.h"
+#+end_src
