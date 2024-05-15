@@ -1,11 +1,7 @@
 * Compile
 #do
-gcc test.c -pedantic -std=c99
+gcc test.c -pedantic -std=c99 -Werror
 
 * Run
 #do
-./a.out
-
-* Remove
-#do
-rm a.out
+./a.exe

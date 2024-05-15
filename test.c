@@ -1,6 +1,5 @@
-#include <stdio.h>
-
 #define STBAN_STRINGUTILS_IMPLEMENTATION
+#define STBAN_STRING_IO
 #include "./stban_stringutils.h"
 
 int main() {
@@ -12,6 +11,8 @@ int main() {
   stban_sb_append_null(&left);
   stban_sb_append_null(&right);
 
-  printf("%s\n%s\n", left.data, right.data);
+  left = stban_sb_read_file("./stban_stringutils.h");
+
+  printf( STB_STR_FMT "\n", STB_STR_ARG(left));
   return 0;
 }
