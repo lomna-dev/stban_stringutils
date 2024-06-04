@@ -1,5 +1,5 @@
 #define STBAN_BMP_IMPLEMENTATION
-#include "./stban_bmp.h"
+#include "../../stban_bmp.h"
 
 #include <stdint.h>
 #include <stdlib.h>
