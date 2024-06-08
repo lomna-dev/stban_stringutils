@@ -80,19 +80,19 @@ stban_bmp_file stban_bmp_file_read_file(const char *filename)
     }
 
   size_t width  = ((size_t)buffer[18])       | ((size_t)buffer[19] << 8) |
-                  ((size_t)buffer[20] << 16) | ((size_t)buffer[21] << 32);
+                  ((size_t)buffer[20] << 16) | ((size_t)buffer[21] << 24);
   size_t height = ((size_t)buffer[22])       | ((size_t)buffer[23] << 8) |
-                  ((size_t)buffer[24] << 16) | ((size_t)buffer[25] << 32);
+                  ((size_t)buffer[24] << 16) | ((size_t)buffer[25] << 24);
 
   size_t bits_per_pixel = ((size_t)buffer[28]) | ((size_t)buffer[29] << 8);
   size_t compression = ((size_t)buffer[30])       | ((size_t)buffer[31] << 8) |
-                       ((size_t)buffer[32] << 16) | ((size_t)buffer[33] << 32);
+                       ((size_t)buffer[32] << 16) | ((size_t)buffer[33] << 24);
 
   size_t offset = ((size_t)buffer[10])       | ((size_t)buffer[11] << 8) |
-                  ((size_t)buffer[12] << 16) | ((size_t)buffer[13] << 32);
+                  ((size_t)buffer[12] << 16) | ((size_t)buffer[13] << 24);
   
   size_t bitmap_size = ((size_t)buffer[34])       | ((size_t)buffer[35] << 8) |
-                       ((size_t)buffer[36] << 16) | ((size_t)buffer[37] << 32);
+                       ((size_t)buffer[36] << 16) | ((size_t)buffer[37] << 24);
     
   stban_bmp_file sb = (stban_bmp_file) {
     .data	    = buffer,
@@ -116,7 +116,7 @@ void stban_bmp_rgb_map_from_file(stban_bmp_file file, stban_bmp_color **map)
   if(file.bitmap_size == 0)
     {
       size_t file_size = ((size_t)file.data[2])       | ((size_t)file.data[3] << 8) |
-	                 ((size_t)file.data[4] << 16) | ((size_t)file.data[5] << 32);
+	                 ((size_t)file.data[4] << 16) | ((size_t)file.data[5] << 24);
       file.bitmap_size = file_size - file.offset;
     }
   
@@ -136,22 +136,50 @@ void stban_bmp_rgb_map_from_file(stban_bmp_file file, stban_bmp_color **map)
     }
 }
 
+size_t stban__byte_no_from_mask(size_t mask)
+{
+  if (mask == 0x000000FF)      return 0;
+  else if (mask == 0x0000FF00) return 1;
+  else if (mask == 0x00FF0000) return 2;
+  else if (mask == 0xFF000000) return 3;
+  else STBAN_BMP_ASSERT((0) && "this should be unreachable");
+  return mask;
+}
+
 void stban_bmp_argb_map_from_file(stban_bmp_file file, stban_bmp_color **map)
 {
   uint16_t bytes_per_pixel = file.bits_per_pixel / 8;
-  size_t current = file.offset;
+  if(file.bitmap_size == 0)
+    {
+      size_t file_size = ((size_t)file.data[2])       | ((size_t)file.data[3] << 8) |
+	                 ((size_t)file.data[4] << 16) | ((size_t)file.data[5] << 24);
+      file.bitmap_size = file_size - file.offset;
+    }
 
-  // find masks and then extract
-  STBAN_BMP_ASSERT(0 && "TODO : NOT IMPLEMENTED stban_bmp_argb_map_from_file");
-  /* for(uint32_t y = 0; y < file.height; y++) */
-  /*   { */
-  /*     for(uint32_t x = 0; x < file.width; x++) */
-  /* 	{ */
-  /* 	  map[0][x + file.width * y] = stban_bmp_ARGB(255, file.data[current + 2], */
-  /* 						      file.data[current + 1], file.data[current]); */
-  /* 	  current += bytes_per_pixel; */
-  /* 	} */
-  /*   } */
+  size_t r_mask = ((size_t)file.data[54])       | ((size_t)file.data[55] << 8) |
+                  ((size_t)file.data[56] << 16) | ((size_t)file.data[57] << 24);
+  size_t g_mask = ((size_t)file.data[58])       | ((size_t)file.data[59] << 8) |
+                  ((size_t)file.data[60] << 16) | ((size_t)file.data[61] << 24);
+  size_t b_mask = ((size_t)file.data[62])       | ((size_t)file.data[63] << 8) |
+                  ((size_t)file.data[64] << 16) | ((size_t)file.data[65] << 24);
+  size_t a_mask = ((size_t)file.data[66])       | ((size_t)file.data[67] << 8) |
+                  ((size_t)file.data[68] << 16) | ((size_t)file.data[69] << 24);
+
+  r_mask = stban__byte_no_from_mask(r_mask);
+  g_mask = stban__byte_no_from_mask(g_mask);
+  b_mask = stban__byte_no_from_mask(b_mask);
+  a_mask = stban__byte_no_from_mask(a_mask);
+  
+  size_t current = file.offset;
+  for(uint32_t y = 0; y < file.height; y++)
+    {
+      for(uint32_t x = 0; x < file.width; x++)
+	{
+	  map[0][x + file.width * y] = stban_bmp_ARGB(file.data[current + a_mask], file.data[current + r_mask],
+						      file.data[current + g_mask], file.data[current + b_mask]);
+	  current += bytes_per_pixel;
+	}
+    }
 }
 
 stban_bmp_color *stban_bmp_read(const char *filename, size_t *width, size_t *height)
@@ -179,28 +207,28 @@ void stban_bmp_write(stban_bmp_color *map, size_t w, size_t h, char *output) {
     (122 + (w*h)) & 0xFF,
     ((122 + (w*h)) >> 8) & 0xFF,
     ((122 + (w*h)) >> 16) & 0xFF,
-    ((122 + (w*h)) >> 32) & 0xFF
+    ((122 + (w*h)) >> 24) & 0xFF
   };
   
   char map_size[4] = {
     (w*h) & 0xFF,
     ((w*h) >> 8) & 0xFF,
     ((w*h) >> 16) & 0xFF,
-    ((w*h) >> 32) & 0xFF
+    ((w*h) >> 24) & 0xFF
   };
   
   char map_width[4] = {
     w & 0xFF,
     (w >> 8) & 0xFF,
     (w >> 16) & 0xFF,
-    (w >> 32) & 0xFF
+    (w >> 24) & 0xFF
   };
   
   char map_height[4] = {
     h & 0xFF,
     (h >> 8) & 0xFF,
     (h >> 16) & 0xFF,
-    (h >> 32) & 0xFF
+    (h >> 24) & 0xFF
   };
 
   char BMP_header[14] = {'B', 'M',
